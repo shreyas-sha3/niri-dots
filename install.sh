@@ -2,15 +2,26 @@
 set -e
 
 AUR_HELPER="paru"
-PACKAGES=(rsync fastfetch kitty niri neovim obs-studio superfile waybar tofi trmt swww)
+PACKAGES=(rsync fastfetch kitty niri neovim obs-studio superfile waybar tofi trmt swww unzip curl)
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 SOURCE_DIR="$SCRIPT_DIR/.config/"
 DEST_DIR="$HOME/.config/"
+
+THEME_ZIP_URL="https://files.catbox.moe/ovuykg.zip"
+THEMES_DIR="$SCRIPT_DIR/themes"
 
 THEME_SRC="$SCRIPT_DIR/themes/Nord/gtk"
 ICON_SRC="$SCRIPT_DIR/themes/Nord/icons"
 THEME_DEST="$HOME/.local/share/themes/Nord"
 ICON_DEST="$HOME/.local/share/icons/Nordzy-dark"
+
+
+echo "Downloading and extracting themes..."
+mkdir -p "$THEMES_DIR"
+curl -L "$THEME_ZIP_URL" -o "$THEMES_DIR/themes.zip"
+unzip -o "$THEMES_DIR/themes.zip" -d "$THEMES_DIR"
+rm "$THEMES_DIR/themes.zip"
+echo "Theme assets prepared."
 
 echo "Checking for missing packages..."
 if ! command -v "$AUR_HELPER" &>/dev/null; then
@@ -30,13 +41,24 @@ else
     echo "All packages installed."
 fi
 
+
 echo "Syncing dotfiles..."
 rsync -av "$SOURCE_DIR" "$DEST_DIR"
 
 echo "Installing Nordic GTK theme and Nordzy icons..."
 mkdir -p "$(dirname "$THEME_DEST")" "$(dirname "$ICON_DEST")"
-rsync -av "$THEME_SRC/" "$THEME_DEST/"
-rsync -av "$ICON_SRC/" "$ICON_DEST/"
+
+if [ -d "$THEME_SRC" ]; then
+    rsync -av "$THEME_SRC/" "$THEME_DEST/"
+else
+    echo "Warning: Theme source $THEME_SRC not found. Check zip structure."
+fi
+
+if [ -d "$ICON_SRC" ]; then
+    rsync -av "$ICON_SRC/" "$ICON_DEST/"
+else
+    echo "Warning: Icon source $ICON_SRC not found. Check zip structure."
+fi
 
 echo "Applying GTK and icon themes..."
 gsettings set org.gnome.desktop.interface gtk-theme "Nord"
@@ -73,7 +95,7 @@ for idx in "${selections[@]}"; do
                     echo "Copied to $p/chrome/"
                 done
             else
-                echo "No userChrome.css found."
+                echo "No userChrome.css found at $ZEN_SRC"
             fi
             ;;
         code-oss)
